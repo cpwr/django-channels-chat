@@ -25,7 +25,11 @@ SECRET_KEY = 'mljm0x25a7cn+t^(8%kz$b_ll_yrkv#6xwh)f9%qr&%sok5zq_'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '0.0.0.0',
+    'web',
+    'localhost',
+]
 
 
 # Application definition
@@ -37,6 +41,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # my apps
+    'chat',
+
+    # 3rd party apps
+    'psycopg2',
+    'celery',
+    'redis',
 ]
 
 MIDDLEWARE = [
@@ -68,6 +80,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.routing.application'
+
+# Channel layer definitions
+# http://channels.readthedocs.org/en/latest/deploying.html#setting-up-a-channel-backend
+CHANNEL_LAYERS = {
+    "default": {
+        # This example app uses the Redis channel layer implementation asgi_redis
+        "BACKEND": "asgi_redis.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+        "ROUTING": "multichat.routing.channel_routing",
+    },
+}
 
 
 # Database
@@ -75,11 +101,24 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'chat',
+        'USER': 'django',
+        'PASSWORD': 'chat',
+        'HOST': 'db',
+        'PORT': '5432',
     }
 }
 
+BROKER_TRANSPORT = "redis"
+BROKER_HOST = "localhost"  # Maps to redis host.
+BROKER_PORT = 6379         # Maps to redis port.
+BROKER_VHOST = "0"
+
+CELERY_RESULT_BACKEND = "redis"
+CELERY_REDIS_HOST = "localhost"
+CELERY_REDIS_PORT = 6379
+CELERY_REDIS_DB = 0
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -118,3 +157,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+STATIC_ROOT = STATIC_URL

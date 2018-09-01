@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: bash -c "
+      python manage.py collectstatic --noinput &&
+      python manage.py makemigrations &&
+      python manage.py migrate &&
+      gunicorn core.wsgi -b 0.0.0.0:8000 --reload"
+    volumes:
+      - .:/src
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    links:
+      - redis
+
+  db:
+    image: postgres:latest
+    container_name: db
+    environment:
+        POSTGRES_DB: chat
+        POSTGRES_USER: django
+        POSTGRES_PASSWORD: chat
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    volumes:
+      - .:/src
+      - ./pg_data:/var/lib/postgresql
+
+  worker:
+    build: .
+    container_name: celery
+    command: bash -c "
+      celery worker
+      --app=core.celery_app
+      -Q default --loglevel=debug"
+    volumes:
+      - .:/src
+    links:
+      - db
+      - redis
