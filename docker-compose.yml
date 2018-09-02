@@ -17,6 +17,7 @@ services:
       gunicorn core.wsgi -b 0.0.0.0:8000 --reload"
     volumes:
       - .:/src
+      - ./static:/src/static
     ports:
       - "8000:8000"
     depends_on:
