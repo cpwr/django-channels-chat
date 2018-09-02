@@ -4,6 +4,23 @@ from django.db import models
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+from enum import IntEnum, unique
+
+
+@unique
+class MessageType(IntEnum):
+
+    MESSAGE = 0  # For standard messages
+    WARNING = 1  # For yellow messages
+    ALERT = 2  # For red & dangerous alerts
+    MUTED = 3  # For just OK information that doesn't bother users
+    ENTER = 4  # For just OK information that doesn't bother users
+    LEAVE = 5  # For just OK information that doesn't bother users
+
+    @classmethod
+    def choices(cls):
+        return [(x.name, x.value) for x in cls]
+
 
 class Message(models.Model):
     """
@@ -23,6 +40,11 @@ class Message(models.Model):
         db_index=True,
     )
     body = models.TextField('body')
+    type = models.IntegerField(
+        choices=[x for x in MessageType.choices()],
+        db_index=True, default=MessageType.MESSAGE,
+        null=False, blank=False,
+    )
 
     class Meta:
         app_label = 'chat'
