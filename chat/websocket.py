@@ -2,6 +2,7 @@ from django.conf import settings
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+from chat.models import MessageType
 from .exceptions import ClientError
 from .utils import get_room_or_error
 
@@ -31,7 +32,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         # Store which rooms the user has joined on this connection
         self.rooms = set()
 
-    async def receive_json(self, content):
+    async def receive_json(self, content, **kwargs):
         """
         Called when we get a text frame. Channels will JSON-decode the payload
         for us and pass it as the first argument.
@@ -49,7 +50,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 await self.send_room(content["room"], content["message"])
         except ClientError as e:
             # Catch any errors and send it back
-            await self.send_json({"error": e.code})
+            await self.send_json({"error": e.status_code})
 
     async def disconnect(self, code):
         """
@@ -150,7 +151,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         # Send a message down to the client
         await self.send_json(
             {
-                "msg_type": settings.MSG_TYPE_ENTER,
+                "msg_type": MessageType.ENTER,
                 "room": event["room_id"],
                 "username": event["username"],
             },
@@ -163,7 +164,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         # Send a message down to the client
         await self.send_json(
             {
-                "msg_type": settings.MSG_TYPE_LEAVE,
+                "msg_type": MessageType.LEAVE,
                 "room": event["room_id"],
                 "username": event["username"],
             },
@@ -176,7 +177,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         # Send a message down to the client
         await self.send_json(
             {
-                "msg_type": settings.MSG_TYPE_MESSAGE,
+                "msg_type": MessageType.MESSAGE,
                 "room": event["room_id"],
                 "username": event["username"],
                 "message": event["message"],
